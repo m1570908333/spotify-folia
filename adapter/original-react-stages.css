@@ -1,0 +1,12 @@
+@import "../../folia/folia-major-main/node_modules/tailwindcss/theme.css" layer(theme);
+@import "../../folia/folia-major-main/node_modules/tailwindcss/utilities.css" layer(utilities);
+@source "../../folia/folia-major-main/src/components/visualizer";
+@source "../../folia/folia-major-main/src/components/PlayerPanel.tsx";
+
+.folia-original-react-stage,
+.folia-original-react-stage > div {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}

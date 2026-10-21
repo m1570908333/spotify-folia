@@ -1,0 +1,38 @@
+{
+  "name": {
+    "en": "Spotify Folia"
+  },
+  "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M4 18C8 16 8 8 12 6C16 4 18 7 20 5C18 11 16 18 9 19C7 19 5 19 4 18Z\" fill=\"currentColor\"/><path d=\"M7 18C10 14 13 11 18 8\" stroke=\"var(--spice-main)\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>",
+  "subfiles": [
+    "release-config.js",
+    "pixi.min.js",
+    "react-jsx-runtime.js",
+    "core.js",
+    "tempera-assets.js",
+    "custom-assets.js",
+    "providers.js",
+    "audio-signals.js",
+    "original-backgrounds.js",
+    "original-background-stage.js",
+    "backgrounds.js",
+    "original-visualizers.js",
+    "original-react-stages.js",
+    "original-diorama.js",
+    "original-tempera-stage.js",
+    "original-sonnet-stage.js",
+    "original-lumiere-stage.js",
+    "original-react-stage.js",
+    "original-diorama-stage.js",
+    "folia-classic.js",
+    "cappella-assets.js",
+    "folia-cappella.js",
+    "folia-partita.js",
+    "folia-english.js",
+    "folia-english-cinematic.js",
+    "jizura-engine.js",
+    "folia-jizura-native.js",
+    "folia-jizura-media.js",
+    "pixi-visualizers.js",
+    "visualizers.js"
+  ]
+}

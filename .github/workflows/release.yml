@@ -1,0 +1,43 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release archive
+        shell: pwsh
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = $env:RELEASE_TAG.TrimStart('v')
+          $stage = Join-Path $env:RUNNER_TEMP 'spotify-folia\folia-stage'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item -Path 'prototype/folia-stage/*' -Destination $stage -Recurse -Force
+          $config = Join-Path $stage 'release-config.js'
+          $content = Get-Content -LiteralPath $config -Raw
+          $content = $content.Replace('OWNER/spotify-folia', $env:REPOSITORY)
+          $content = $content.Replace('https://github.com/sponsors/OWNER', "https://github.com/sponsors/$($env:REPOSITORY.Split('/')[0])")
+          $content = [regex]::Replace($content, 'version: "[^"]+"', "version: `"$version`"", 1)
+          Set-Content -LiteralPath $config -Value $content -Encoding utf8
+          $archive = Join-Path $env:RUNNER_TEMP 'spotify-folia.zip'
+          Compress-Archive -Path (Join-Path $env:RUNNER_TEMP 'spotify-folia\folia-stage') -DestinationPath $archive
+          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$archive.sha256" -Value "$hash  spotify-folia.zip" -Encoding ascii
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            ${{ runner.temp }}/spotify-folia.zip
+            ${{ runner.temp }}/spotify-folia.zip.sha256
