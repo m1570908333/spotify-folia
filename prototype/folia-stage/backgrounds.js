@@ -152,7 +152,7 @@ const FoliaStageBackgrounds = (() => {
     const url = String(tuning.url || "").trim();
     return h("div", { className: "folia-bg folia-bg--url" }, url
       ? h("iframe", { src: url, title: "Folia background", sandbox: "allow-scripts allow-same-origin", style: { opacity: clamp(tuning.opacity) } })
-      : h("div", { className: "folia-bg__url-empty" }, "在背景设置中填写网页 URL"));
+      : h("div", { className: "folia-bg__url-empty" }, "Enter a web URL in Background settings"));
   }
 
   function render(mode, props) {

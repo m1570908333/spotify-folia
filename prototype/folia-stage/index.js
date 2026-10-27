@@ -6,13 +6,12 @@ const h = (...args) => typeof FoliaStageLocale === "undefined" ? React.createEle
 const getFoliaStageRelease = () => typeof FoliaStageRelease === "undefined" ? {
   repository: "m1570908333/spotify-folia",
   version: "0.1.0",
-  foliaVersion: "0.7.19",
-  jizuraVersion: "0.10.1",
-  sponsorUrl: "https://github.com/sponsors/m1570908333",
   latestReleaseApi: "https://api.github.com/repos/m1570908333/spotify-folia/releases/latest",
   installCommand: "irm https://raw.githubusercontent.com/m1570908333/spotify-folia/main/scripts/install.ps1 | iex",
   compareVersions: () => 0,
 } : FoliaStageRelease;
+const foliaStageText = (value) => typeof FoliaStageLocale === "undefined" ? value : FoliaStageLocale.en(value);
+const foliaStageNotify = (value, error = false) => Spicetify.showNotification?.(foliaStageText(value), error);
 
 function readPlayback() {
   const state = Spicetify.Player.data;
@@ -147,8 +146,6 @@ function ReleaseInfoDialog({ onClose }) {
       h("header", null, h("strong", null, "Spotify Folia"), h(IconButton, { label: "Close", onClick: onClose }, "×")),
       h("dl", null,
         h("div", null, h("dt", null, "Installed version"), h("dd", null, `v${releaseConfig.version}`)),
-        h("div", null, h("dt", null, "Folia upstream"), h("dd", null, `v${releaseConfig.foliaVersion}`)),
-        h("div", null, h("dt", null, "JIZURA upstream"), h("dd", null, `v${releaseConfig.jizuraVersion}`)),
       ),
       h("p", { className: `folia-release-status is-${state.status}` },
         state.status === "loading" ? "Checking GitHub Releases…"
@@ -162,6 +159,18 @@ function ReleaseInfoDialog({ onClose }) {
       ),
       state.release?.html_url && h("a", { href: state.release.html_url, target: "_blank", rel: "noopener noreferrer" }, "View release notes"),
       state.status !== "loading" && h("button", { className: "folia-button", onClick: () => void check() }, "Check again"),
+    ),
+  );
+}
+
+function SponsorDialog({ onClose }) {
+  return h("div", { className: "folia-release-backdrop", onMouseDown: (event) => event.target === event.currentTarget && onClose() },
+    h("section", { className: "folia-release-dialog folia-sponsor-dialog", role: "dialog", "aria-modal": "true", "aria-label": "Support Spotify Folia" },
+      h("header", null, h("strong", null, "Support Spotify Folia"), h(IconButton, { label: "Close", onClick: onClose }, "×")),
+      h("p", null, "Enjoying Spotify Folia? Your support helps fund new stage visuals, smoother animations, and continued open-source development."),
+      h("img", { className: "folia-sponsor-card", src: new URL("/custom_apps/folia-stage/assets/paypal-sponsor-card.png", location.origin).href, alt: "Support Spotify Folia via PayPal. Scan the QR code or use the PayPal link below." }),
+      h("p", { className: "folia-sponsor-link-label" }, "Scan the QR code or use this PayPal link:"),
+      h("a", { className: "folia-sponsor-link", href: "https://www.paypal.me/syj8065", target: "_blank", rel: "noopener noreferrer" }, "https://www.paypal.me/syj8065"),
     ),
   );
 }
@@ -299,9 +308,9 @@ function SegmentationEditor({ uri, lyrics, onClose, onSaved }) {
       FoliaStageCore.saveWordSegmentation(uri, lines, "manual");
       onSaved();
       onClose();
-      Spicetify.showNotification?.(`已导入 ${Object.keys(lines).length} 行分词`);
+      foliaStageNotify(`已导入 ${Object.keys(lines).length} 行分词`);
     } catch (error) {
-      Spicetify.showNotification?.(`分词导入失败：${error.message}`, true);
+      foliaStageNotify(`分词导入失败：${error.message}`, true);
     }
   };
   return h("div", { className: "folia-segmentation-backdrop", onMouseDown: (event) => event.target === event.currentTarget && onClose() },
@@ -596,7 +605,7 @@ function TemperaImagePoolSettings({ tuning, update }) {
       } else {
         patch({ layerImages: images.concat(added) });
       }
-      Spicetify.showNotification?.(`已${importMode === "replace" ? "替换" : "追加"} ${added.length} 张 Tempera 图片`);
+      foliaStageNotify(`${importMode === "replace" ? "Replaced" : "Added"} ${added.length} Tempera images`);
     } catch (error) { console.error("[FoliaStage] Tempera image backup import failed", error); }
     finally { setBusy(false); }
   };
@@ -657,7 +666,7 @@ function CappellaAssetPoolSettings({ tuning, update }) {
       await globalThis.FoliaStageAssets?.addFiles(type, files, 32);
       refresh();
       update({ cappellaTuning: { ...tuning, assetRevision: Date.now() } });
-    } catch (error) { Spicetify.showNotification?.(`Cappella 资源导入失败：${error.message}`, true); }
+    } catch (error) { foliaStageNotify(`Cappella 资源导入失败：${error.message}`, true); }
     finally { setBusy(false); }
   };
   const remove = async (type, id) => {
@@ -717,7 +726,7 @@ function MonetAssetSettings({ settings, update }) {
         update({ backgroundAssets: { ...settings.backgroundAssets, customImage: selected }, backgroundTunings: { ...settings.backgroundTunings, monet: { ...settings.backgroundTunings.monet, backgroundSource: "uploaded-global" } } });
       }
       refresh();
-    } catch (error) { Spicetify.showNotification?.(`Monet 资源导入失败：${error.message}`, true); }
+    } catch (error) { foliaStageNotify(`Monet 资源导入失败：${error.message}`, true); }
     finally { setBusy(false); }
   };
   const removePortrait = async (id) => {
@@ -831,7 +840,7 @@ function SettingsPanel({
           h("input", { type: "color", value: isHexColor(settings.theme?.accentColor) ? settings.theme.accentColor : FoliaStageCore.DEFAULT_SETTINGS.theme.primaryColor, onChange: (event) => update({ theme: { ...settings.theme, accentColor: event.target.value } }) }),
           h("span", null, "固定强调色"),
         ),
-        h("button", { className: "folia-button", type: "button", onClick: () => update({ theme: { ...settings.theme, accentColor: "" } }) }, "自动跟随封面"),
+        h("button", { className: "folia-button folia-theme-settings__match", type: "button", onClick: () => update({ theme: { ...settings.theme, accentColor: "" } }) }, "自动跟随封面"),
       ),
       h("div", { className: "folia-settings__file-row" },
         h("label", { className: "folia-inline-control folia-inline-control--wide" }, "字体名称",
@@ -1142,6 +1151,7 @@ function FoliaStage() {
   const [offset, setOffsetState] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [sponsorOpen, setSponsorOpen] = useState(false);
   const [segmentationOpen, setSegmentationOpen] = useState(false);
   const [segmentationRevision, setSegmentationRevision] = useState(0);
   const [audioAnalysis, setAudioAnalysis] = useState("unknown");
@@ -1150,6 +1160,19 @@ function FoliaStage() {
   const [pageVisible, setPageVisible] = useState(!document.hidden);
   const [jizuraProject, setJizuraProject] = useState(null);
   const [jizuraHistory, setJizuraHistory] = useState({past: [], future: []});
+  useEffect(() => {
+    const key = "spotify-folia-sponsor-prompt-v1";
+    const interval = 14 * 24 * 60 * 60 * 1000;
+    const timer = setTimeout(() => {
+      let last = 0;
+      try { last = Number(localStorage.getItem(key) || 0); } catch { /* Optional local preference. */ }
+      if (!last || Date.now() - last >= interval) {
+        try { localStorage.setItem(key, String(Date.now())); } catch { /* Optional local preference. */ }
+        setSponsorOpen(true);
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
   const jizuraHistoryRef = useRef(jizuraHistory);
   jizuraHistoryRef.current = jizuraHistory;
   const jizuraTuningRef = useRef(settings.jizuraTuning || {});
@@ -1296,8 +1319,8 @@ function FoliaStage() {
     try {
       const project = FoliaStageCore.setJizuraProject(playback.uri, { tuning: settings.jizuraTuning, sourceLines: lyrics?.lines || [] });
       setJizuraProject(project);
-      Spicetify.showNotification?.("本曲 JIZURA 工程已保存");
-    } catch(error) { Spicetify.showNotification?.(error.message,true); }
+      foliaStageNotify("本曲 JIZURA 工程已保存");
+    } catch(error) { foliaStageNotify(error.message,true); }
   };
   const exportJizuraProject = () => {
     try {
@@ -1307,7 +1330,7 @@ function FoliaStage() {
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = "folia-jizura-project.json"; anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) { Spicetify.showNotification?.(`工程导出失败：${error.message}`, true); }
+    } catch (error) { foliaStageNotify(`工程导出失败：${error.message}`, true); }
   };
   const exportNativeJizuraProject = () => {
     try {
@@ -1316,7 +1339,7 @@ function FoliaStage() {
       const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2)], { type: "application/json" }));
       const anchor = document.createElement("a"); anchor.href = url; anchor.download = "jizura-project.json"; anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (error) { Spicetify.showNotification?.(`原版工程导出失败：${error.message}`, true); }
+    } catch (error) { foliaStageNotify(`原版工程导出失败：${error.message}`, true); }
   };
   const importJizuraProject = () => jizuraProjectInput.current?.click();
   const onJizuraProjectFile = async (event) => {
@@ -1341,15 +1364,15 @@ function FoliaStage() {
       setJizuraProject(imported); setJizuraHistory({past: [], future: []});
       setSettings(current => ({...current, mode: "jizura", jizuraTuning: tuning}));
       const report=tuning.importReport;
-      Spicetify.showNotification?.(report ? `JIZURA 已导入：歌词匹配 ${report.matched}/${report.total} 行，未匹配的逐行设置已跳过` : "JIZURA 工程已导入到当前歌曲");
-    } catch (error) { Spicetify.showNotification?.(`工程导入失败：${error.message}`, true); }
+      foliaStageNotify(report ? `JIZURA 已导入：歌词匹配 ${report.matched}/${report.total} 行，未匹配的逐行设置已跳过` : "JIZURA 工程已导入到当前歌曲");
+    } catch (error) { foliaStageNotify(`工程导入失败：${error.message}`, true); }
   };
   const removeJizuraProject = () => {
     try{
       FoliaStageCore.removeJizuraProject(playback.uri); setJizuraProject(null);
       updateJizuraTuning({...settings.jizuraTuning,overrides:{},sourceMarkup:{},lineTimes:{},importReport:undefined});
-      Spicetify.showNotification?.("已清除本曲 JIZURA 工程及逐行设置");
-    }catch(error){Spicetify.showNotification?.(error.message,true);}
+      foliaStageNotify("已清除本曲 JIZURA 工程及逐行设置");
+    }catch(error){foliaStageNotify(error.message,true);}
   };
   const undoJizura = () => {
     const history=jizuraHistoryRef.current;
@@ -1384,7 +1407,7 @@ function FoliaStage() {
           ...current,
           theme: { ...current.theme, fontFamily: family, customFont: { name: file.name, family, dataUrl: String(reader.result || "") } },
         }));
-        Spicetify.showNotification?.(`已导入字体：${file.name}`);
+      foliaStageNotify(`已导入字体：${file.name}`);
       };
       reader.readAsDataURL(file);
     };
@@ -1404,9 +1427,9 @@ function FoliaStage() {
       FoliaStageCore.setLocalLyrics(playback.uri, parsed);
       setRawLyrics(parsed);
       setStatus("ready");
-      Spicetify.showNotification?.(`已为《${playback.title}》导入歌词`);
+      foliaStageNotify(`已为《${playback.title}》导入歌词`);
     } catch (error) {
-      Spicetify.showNotification?.(`歌词导入失败：${error.message}`, true);
+      foliaStageNotify(`歌词导入失败：${error.message}`, true);
     }
   };
   const removeLocal = () => {
@@ -1546,9 +1569,9 @@ function FoliaStage() {
       };
       if (!FoliaStageVisualizers.has(next.mode)) next.mode = FoliaStageCore.DEFAULT_SETTINGS.mode;
       setSettings(next);
-      Spicetify.showNotification?.("Folia Stage 设置已导入");
+      foliaStageNotify("Folia Stage 设置已导入");
     } catch (error) {
-      Spicetify.showNotification?.(`设置导入失败：${error.message}`, true);
+      foliaStageNotify(`设置导入失败：${error.message}`, true);
     }
   };
   const toggleFullscreen = () => {
@@ -1560,7 +1583,7 @@ function FoliaStage() {
     if (!confirmed) return;
     setSettings(JSON.parse(JSON.stringify(FoliaStageCore.DEFAULT_SETTINGS)));
     setOffset(0);
-    Spicetify.showNotification?.("舞台设置已恢复初始值");
+    foliaStageNotify("舞台设置已恢复初始值");
   };
 
   const extensionStage = lyrics && FoliaStageVisualizers.render(settings.mode, {
@@ -1640,7 +1663,7 @@ function FoliaStage() {
         h(IconButton, { label: "全屏", onClick: toggleFullscreen }, "⛶"),
         h(IconButton, { label: "设置", className: settingsOpen ? "is-active" : "", onClick: () => setSettingsOpen((open) => !open) }, "⚙"),
         h(IconButton, { label: "Version information", onClick: () => setReleaseOpen(true) }, "ⓘ"),
-        h("a", { className: "folia-icon-button folia-sponsor-button", href: releaseConfig.sponsorUrl, title: "Sponsor this project", "aria-label": "Sponsor this project", target: "_blank", rel: "noopener noreferrer" }, "♥"),
+        h(IconButton, { className: "folia-sponsor-button", label: "Support this project", onClick: () => setSponsorOpen(true) }, "♥"),
       ),
     ),
   ),
@@ -1671,6 +1694,7 @@ function FoliaStage() {
     diagnostics,
   }),
   releaseOpen && h(ReleaseInfoDialog, { onClose: () => setReleaseOpen(false) }),
+  sponsorOpen && h(SponsorDialog, { onClose: () => setSponsorOpen(false) }),
   segmentationOpen && lyrics && h(SegmentationEditor, {
     uri: playback.uri,
     lyrics: rawLyrics,

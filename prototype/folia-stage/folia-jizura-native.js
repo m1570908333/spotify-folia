@@ -5,8 +5,8 @@ const FoliaJizuraStage = (() => {
   const J = FoliaJizuraEngine;
   const number = (v, fallback, min, max) => Number.isFinite(Number(v)) ? Math.min(max, Math.max(min, Number(v))) : fallback;
   const hash = value => Array.from(String(value)).reduce((n, c) => Math.imul(n ^ c.codePointAt(0), 16777619), 2166136261) >>> 0;
-  const GROUP_LABELS = {layout:'排版', enter:'入场', hold:'持续运动', exit:'退场', decor:'装饰', treat:'文字处理', bg:'背景', cam:'镜头', fx:'画面特效', trans:'转场'};
-  const THEMES = {lyricpv:'文字 PV', kinetic:'动感编排', wa:'和风', horror:'惊悚', pop:'流行', ballad:'抒情'};
+  const GROUP_LABELS = {layout:'Layout', enter:'Entrance', hold:'Hold', exit:'Exit', decor:'Decorations', treat:'Typography', bg:'Background', cam:'Camera', fx:'Visual effects', trans:'Transitions'};
+  const THEMES = {lyricpv:'Lyric PV', kinetic:'Kinetic', wa:'Japanese', horror:'Horror', pop:'Pop', ballad:'Ballad'};
   const FX_KEYS={cutSpeed:'density',motionIntensity:'motion',particleDensity:'decor',glitch:'glitch',chroma:'chroma',texture:'texture',bgSwitch:'bgSwitch',flash:'flash',showHud:'hud',hideNo:'hideNo',hideTime:'hideTime',stepped:'koma'};
   let fontDatabase;
   function openFontDatabase() {
@@ -335,28 +335,31 @@ const FoliaJizuraStage = (() => {
     const canvasRef = useRef(null);
     const latest = useRef({});
     latest.current = {timeMs,visible,paused:playback.paused};
-    const [size,setSize] = useState({width:1920,height:1080,pixels:1});
+    const [size,setSize] = useState(null);
     const [error,setError] = useState('');
     const [fontRevision,setFontRevision] = useState(0);
     const tuningKey = JSON.stringify(tuning);
     const audio = useMemo(()=>FoliaJizuraMedia.timeline(playback.uri,number(tuning.beatResponse,1,0,2),tuning)||audioSignals?.nativeTimeline?.(number(tuning.beatResponse,1,0,2))||null,[audioSignals,tuning.beatResponse,tuning.localBpm,tuning.localBeatOffset,playback.uri,mediaRevision]);
     const result = useMemo(()=>{
+      if (!size) return {};
       try {return {plan:buildPlan(lyrics?.lines,playback,tuning,size.width,size.height,audio,showTranslation)};}
       catch (cause) {console.error('JIZURA planner',cause);return {error:String(cause.message || cause)};}
-    },[lyrics?.lines,playback.uri,playback.title,playback.artist,playback.durationMs,tuningKey,size.width,size.height,audio,showTranslation,fontRevision]);
+    },[lyrics?.lines,playback.uri,playback.title,playback.artist,playback.durationMs,tuningKey,size?.width,size?.height,audio,showTranslation,fontRevision]);
     useEffect(()=>{
       const canvas = canvasRef.current;
       if (!canvas) return undefined;
       let timer;
-      const observer = new ResizeObserver(()=>{
-        clearTimeout(timer);
-        timer = setTimeout(()=>{
+      const measure = ()=>{
           const rect = canvas.getBoundingClientRect();
           if (rect.width > 0 && rect.height > 0) {
             const next={width:Math.round(rect.width),height:Math.round(rect.height),pixels:Math.min(devicePixelRatio || 1,1.5)};
-            setSize(old=>old.width===next.width&&old.height===next.height&&old.pixels===next.pixels?old:next);
+            setSize(old=>old?.width===next.width&&old?.height===next.height&&old?.pixels===next.pixels?old:next);
           }
-        },80);
+      };
+      measure();
+      const observer = new ResizeObserver(()=>{
+        clearTimeout(timer);
+        timer = setTimeout(measure,80);
       });
       observer.observe(canvas);
       return ()=>{clearTimeout(timer);observer.disconnect();};
@@ -367,7 +370,7 @@ const FoliaJizuraStage = (() => {
       if(!fonts.length)return undefined;
       J.restoreUserFonts(fonts).then(missing=>{
         if(active){
-          if(missing.length)Spicetify.showNotification?.(`JIZURA 字体尚未导入：${missing.join('、')}`,true);
+          if(missing.length)Spicetify.showNotification?.(typeof FoliaStageLocale === 'undefined' ? `JIZURA fonts are not imported: ${missing.join(', ')}` : FoliaStageLocale.en(`JIZURA 字体尚未导入：${missing.join('、')}`),true);
           J.metrics.clear();J.glyphs.clear();setFontRevision(n=>n+1);
         }
       }).catch(error=>console.warn('JIZURA local fonts',error));
@@ -375,13 +378,13 @@ const FoliaJizuraStage = (() => {
     },[JSON.stringify(tuning.userFonts||[])]);
     const planFonts=JSON.stringify(J.fontsOfPlan(result.plan));
     useEffect(()=>{
-      if (!tuning.onlineFonts || !lyrics?.lines?.length) return undefined;
+      if (!tuning.onlineFonts || !lyrics?.lines?.length || !result.plan) return undefined;
       let active = true;
       J.ensureFonts(lyrics.lines.map(l=>l.text).join(''),J.fontsOfPlan(result.plan))
         .then(()=>{if(active){J.metrics.clear?.();J.glyphs.clear();setFontRevision(n=>n+1);}})
         .catch(cause=>console.warn('JIZURA font fallback',cause));
       return ()=>{active=false;};
-    },[lyrics?.lines,tuning.onlineFonts,planFonts]);
+    },[lyrics?.lines,tuning.onlineFonts,planFonts,!!result.plan]);
     useEffect(()=>{
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
@@ -412,13 +415,13 @@ const FoliaJizuraStage = (() => {
       message&&h('div',{role:'status',style:{position:'absolute',inset:0,display:'grid',placeItems:'center',color:'#fff',background:'#111'}},message));
   }
 
-  function LazyDetails({children,onToggle,...props}) {
+  function LazyDetails({children,renderContent,onToggle,...props}) {
     const [opened,setOpened]=useState(false);
     const items=React.Children?React.Children.toArray(children):children;
     return h('details',{...props,onToggle:event=>{
       if(event.currentTarget.open)setOpened(true);
       onToggle?.(event);
-    }},items[0],opened?items.slice(1):null);
+    }},items[0],opened?(renderContent?renderContent():items.slice(1)):null);
   }
 
   function EditorTools({tuning,onChange,lines,playback,plan}) {
@@ -444,13 +447,13 @@ const FoliaJizuraStage = (() => {
     };
     const stamp=advance=>{
       const now=progress();
-      if(!Number.isFinite(now)||now<0||now>duration){setMessage('当前播放时间不可用');return;}
+      if(!Number.isFinite(now)||now<0||now>duration){setMessage('Current playback time is unavailable');return;}
       const index=Math.min(selected,effective.length-1);
       if(index<0)return;
       const low=index>0?effective[index-1].startMs/1000+.05:0;
       const high=index+1<effective.length?effective[index+1].startMs/1000-.05:duration-.05;
-      if(now<low||now>high){setMessage('打点时间须位于相邻歌词之间');return;}
-      putTime(index,now);setMessage(`第 ${index+1} 行 · ${now.toFixed(2)}s`);
+      if(now<low||now>high){setMessage('Timestamp must fall between adjacent lyric lines');return;}
+      putTime(index,now);setMessage(`Line ${index+1} · ${now.toFixed(2)}s`);
       if(advance)setSelected(Math.min(index+1,effective.length-1));
     };
     const items=J.order(group).filter(id=>J.registry(group)[id]&&!J.registry(group)[id].special);
@@ -469,7 +472,7 @@ const FoliaJizuraStage = (() => {
         if(document.visibilityState==='hidden'||!cv.getBoundingClientRect().height||now-last<32)return;
         if(begin==null)begin=now;last=now;
         try{render.frame(ctx,previewPlan,((now-begin)/1000)%Math.max(1,previewPlan.duration),{scale:cv.width/previewPlan.W});}
-        catch(error){cancelAnimationFrame(id);setMessage(`效果预览失败：${error.message}`);}
+        catch(error){cancelAnimationFrame(id);setMessage(`Effect preview failed: ${error.message}`);}
       };
       id=requestAnimationFrame(frame);
       return()=>{cancelAnimationFrame(id);render.dispose();renderer.current=null;};
@@ -524,7 +527,7 @@ const FoliaJizuraStage = (() => {
     });
     const controls=(object,path=[],depth=0)=>Object.entries(object).map(([key,item])=>{
       const next=[...path,key],name=next.join('.');
-      if(item&&typeof item==='object')return depth<8?h(LazyDetails,{key:name},h('summary',null,key),...controls(item,next,depth+1)):null;
+      if(item&&typeof item==='object')return depth<8?h(LazyDetails,{key:name,renderContent:()=>controls(item,next,depth+1)},h('summary',null,key)):null;
       if(item==null)return null;
       const type=typeof item;
       if(!['boolean','number','string'].includes(type))return null;
@@ -584,6 +587,7 @@ const FoliaJizuraStage = (() => {
     const mediaRevision=FoliaJizuraMedia.useRevision();
     const [message,setMessage]=useState('');
     const [parametersOpen,setParametersOpen]=useState({});
+    const [editorOpened,setEditorOpened]=useState(false);
     const change=patch=>{
       const next={...tuning,...patch};
       if(!Object.hasOwn(patch,'nativeFx')){
@@ -598,9 +602,10 @@ const FoliaJizuraStage = (() => {
     const updateOverride=(index,patch)=>change({overrides:{...(tuning.overrides||{}),[index]:{...(tuning.overrides?.[index]||{}),...patch}}});
     const removeOverrideKey=(index,key)=>{const row={...(tuning.overrides?.[index]||{})};delete row[key];change({overrides:{...(tuning.overrides||{}),[index]:row}});};
     const plan=useMemo(()=>{try{
+      if(!editorOpened)return null;
       const rect=document.querySelector?.('.folia-jizura__canvas')?.getBoundingClientRect();
       return buildPlan(lines,playback,tuning,rect?.width||1280,rect?.height||720,FoliaJizuraMedia.timeline(playback.uri,number(tuning.beatResponse,1,0,2),tuning)||audioSignals?.nativeTimeline?.(number(tuning.beatResponse,1,0,2))||null);
-    }catch{return null;}},[JSON.stringify(tuning),lines,playback.uri,playback.title,playback.artist,playback.durationMs,audioSignals,mediaRevision]);
+    }catch{return null;}},[editorOpened,JSON.stringify(tuning),lines,playback.uri,playback.title,playback.artist,playback.durationMs,audioSignals,mediaRevision]);
     const importFont=async event=>{
       const file=event.target.files?.[0];event.target.value='';if(!file)return;
       try {
@@ -612,8 +617,8 @@ const FoliaJizuraStage = (() => {
         await J.saveFontData(key,data);document.fonts.add(face);
         J.addUserFont(key,file.name,family,400);J.FONTS[key].loaded=true;
         change({userFonts:[...(tuning.userFonts||[]).filter(font=>font.key!==key),{key,label:file.name,family,weight:400}],font:key});
-        setMessage('字体已保存到本机');
-      }catch(error){setMessage(`字体导入失败：${error.message}`);}
+        setMessage('Font saved on this device');
+      }catch(error){setMessage(`Font import failed: ${error.message}`);}
     };
     const choose=(index,key,group,empty='')=>h('label',{key},GROUP_LABELS[group],h('select',{value:tuning.overrides?.[index]?.[key]||'',onChange:e=>e.target.value?updateOverride(index,{[key]:e.target.value}):removeOverrideKey(index,key)},[[empty,'自动'],...J.order(group).filter(id=>J.registry(group)[id]&&!J.registry(group)[id].special).map(id=>[id,J.registry(group)[id].name||id])].map(([value,label])=>h('option',{key:value,value},label))));
     const colorInput=(key,fallback)=>h('label',{key},key,h('input',{type:'color',value:/^#[0-9a-f]{6}$/i.test(tuning.colors?.[key])?tuning.colors[key]:fallback,onChange:e=>change({colors:{...(tuning.colors||{}),[key]:e.target.value}})}));
@@ -621,8 +626,7 @@ const FoliaJizuraStage = (() => {
     const lineEditor=(line,index)=>{
       const override=tuning.overrides?.[index]||{};
       const cuts=plan?.cuts?.filter(c=>c.line===index&&c.utext!=null)||[];
-      return h(LazyDetails,{key:index},
-        h('summary',null,`${String(index+1).padStart(2,'0')} · ${line.text.slice(0,28)}`),
+      return h(LazyDetails,{key:index,renderContent:()=>[
         h('label',null,'镜头数',h('input',{type:'number',min:0,max:12,value:override.cuts||0,onChange:e=>updateOverride(index,{cuts:Math.max(0,Math.min(12,Number(e.target.value)||0))})})),
         h('label',null,h('input',{type:'checkbox',checked:!!override.single,onChange:e=>updateOverride(index,{single:e.target.checked})}),'整行单镜头'),
         h('button',{type:'button',onClick:()=>updateOverride(index,{seed:(override.seed||0)+1,lock:false,lockedCuts:undefined,lockedSeed:undefined})},'重排本行'),
@@ -637,8 +641,7 @@ const FoliaJizuraStage = (() => {
         h('label',null,'手动分词（用 / 分隔）',h('input',{value:(tuning.sourceMarkup?.[index]?.manual||[]).join('/'),onChange:e=>change({sourceMarkup:{...(tuning.sourceMarkup||{}),[index]:{...(tuning.sourceMarkup?.[index]||{}),manual:e.target.value.split('/').map(v=>v.trim()).filter(Boolean)}}})})),
         h('label',null,'重音词（用 , 分隔）',h('input',{value:(tuning.sourceMarkup?.[index]?.emph||[]).join(','),onChange:e=>change({sourceMarkup:{...(tuning.sourceMarkup||{}),[index]:{...(tuning.sourceMarkup?.[index]||{}),emph:e.target.value.split(',').map(v=>v.trim()).filter(Boolean)}}})})),
         h('label',null,h('input',{type:'checkbox',checked:!!tuning.sourceMarkup?.[index]?.impact,onChange:e=>change({sourceMarkup:{...(tuning.sourceMarkup||{}),[index]:{...(tuning.sourceMarkup?.[index]||{}),impact:e.target.checked}}})}),'强调句'),
-        ...cuts.map((cut,k)=>h(LazyDetails,{key:k},
-          h('summary',null,`镜头 ${k+1} · ${cut.utext}`),
+        ...cuts.map((cut,k)=>h(LazyDetails,{key:k,renderContent:()=>[
           ...['layout','enter','hold','exit','decor','treat','bg','cam','trans'].map(group=>h('label',{key:group},GROUP_LABELS[group],h('select',{value:override.cutTech?.[k]?.[group]||'',onChange:e=>updateOverride(index,{cutTech:{...(override.cutTech||{}),[k]:{...(override.cutTech?.[k]||{}),[group]:e.target.value}}})},[...techniqueOptions(group),...(['decor','trans'].includes(group)&&!J.registry(group).none?[['none','无']]:[])].map(([value,label])=>h('option',{key:value,value},label))))),
           k>0&&h('label',null,'切点（秒）',h('input',{type:'number',step:.01,min:0,value:override.cutTime?.[k]??Math.max(0,cut.start-(plan?.lines?.[index]?.start||0)).toFixed(2),onChange:e=>updateOverride(index,{cutTime:{...(override.cutTime||{}),[k]:Number(e.target.value)||0}})})),
           k>0&&h('button',{type:'button',onClick:()=>{const times={...override.cutTime};delete times[k];updateOverride(index,{cutTime:times});}},'恢复自动切点'),
@@ -649,8 +652,8 @@ const FoliaJizuraStage = (() => {
               updateOverride(index,{lock:true,lockedSeed:plan?.lines?.[index]?.seed,lockedCuts:snapshot});
             }})
           )
-        ))
-      );
+        ]},h('summary',null,`镜头 ${k+1} · ${cut.utext}`)))
+      ]},h('summary',null,`${String(index+1).padStart(2,'0')} · ${line.text.slice(0,28)}`));
     };
     return h('div',{className:'folia-settings__section folia-settings__jizura'},
       h('label',null,'JIZURA'),
@@ -661,7 +664,7 @@ const FoliaJizuraStage = (() => {
       select('歌词语言','lang',[['auto','自动'],['ja','日语'],['zh-Hans','简体中文'],['zh-Hant','繁体中文'],['ko','韩语']]),
       ...sliders.map(([key,label,min,max,fallback])=>h('label',{key},`${label} ${number(tuning[key],fallback,min,max).toFixed(2)}`,h('input',{type:'range',min,max,step:.05,value:number(tuning[key],fallback,min,max),onChange:e=>change({[key]:Number(e.target.value)})}))),
       ...[['unify','连贯编排',true],['typeset','原版文字整列',false],['extra','扩展效果',true],['typo','文字 PV 效果',true],['kinetic','动感效果',true],['wa','和风效果',true],['horror','惊悚效果',false],['stepped','原版抽帧',false],['flash','闪光效果',false],['showHud','显示舞台信息',true],['hideNo','隐藏镜头编号',false],['hideTime','隐藏舞台时间',false],['onlineFonts','在线字体',false]].map(([key,label,fallback])=>h('label',{key},h('input',{type:'checkbox',checked:tuning[key]==null?fallback:!!tuning[key],onChange:e=>change({[key]:e.target.checked})}),label)),
-      h(LazyDetails,null,h('summary',null,'画面、配色与字体'),
+      h(LazyDetails,{renderContent:()=>[
         h('label',null,'导入字体',h('input',{type:'file',accept:'.ttf,.otf,.woff,.woff2',onChange:importFont})),
         message&&h('span',{role:'status'},message),
         h('label',null,'合成背景',h('select',{value:tuning.keyBg||'off',onChange:e=>change({keyBg:e.target.value})},[['off','关闭'],['black','黑底合成'],['green','绿幕合成']].map(([value,label])=>h('option',{key:value,value},label)))),
@@ -672,17 +675,16 @@ const FoliaJizuraStage = (() => {
         h('label',null,h('input',{type:'checkbox',checked:!!tuning.colors?.accentOn,onChange:e=>change({colors:{...(tuning.colors||{}),accentOn:e.target.checked}})}),'自定义强调色'),
         tuning.colors?.accentOn&&['accent','ghostA','ghostB'].map(key=>colorInput(key,'#ffffff')),
         ...['display','serif','body','mono'].map(role=>h('label',{key:role},`${role} 字体`,h('select',{value:tuning.fontRoles?.[role]||'',onChange:e=>change({fontRoles:{...(tuning.fontRoles||{}),[role]:e.target.value}})},[['','跟随主题'],...Object.entries(J.FONTS).map(([key,font])=>[key,font.label])].map(([value,label])=>h('option',{key:value,value},label)))))
-      ),
-      h(LazyDetails,null,h('summary',null,'原版效果选择'),...J.GROUP_KEYS.map(group=>h('label',{key:group},GROUP_LABELS[group],h('select',{'aria-label':`JIZURA ${GROUP_LABELS[group]}`,value:tuning.techniques?.[group]||'',onChange:e=>change({techniques:{...tuning.techniques,[group]:e.target.value}})},techniqueOptions(group).map(([value,label])=>h('option',{key:value,value},label)))))),
-      h(LazyDetails,null,h('summary',null,'候选效果池与随机锁'),...J.GROUP_KEYS.map(group=>h(LazyDetails,{key:group},
-        h('summary',null,`${GROUP_LABELS[group]} 候选池${Array.isArray(tuning.enabledTechniques?.[group])?` · ${tuning.enabledTechniques[group].length}`:' · 全部'}`),
+      ]},h('summary',null,'画面、配色与字体')),
+      h(LazyDetails,{renderContent:()=>J.GROUP_KEYS.map(group=>h('label',{key:group},GROUP_LABELS[group],h('select',{'aria-label':`JIZURA ${GROUP_LABELS[group]}`,value:tuning.techniques?.[group]||'',onChange:e=>change({techniques:{...tuning.techniques,[group]:e.target.value}})},techniqueOptions(group).map(([value,label])=>h('option',{key:value,value},label)))))},h('summary',null,'原版效果选择')),
+      h(LazyDetails,{renderContent:()=>J.GROUP_KEYS.map(group=>h(LazyDetails,{key:group,renderContent:()=>[
         h('label',null,h('input',{type:'checkbox',checked:!!tuning.locks?.tech?.[group],onChange:e=>change({locks:{...tuning.locks,tech:{...tuning.locks?.tech,[group]:e.target.checked}}})}),'随机编排时锁定此类别'),
         h('button',{type:'button',onClick:()=>{const next={...(tuning.enabledTechniques||{})};delete next[group];change({enabledTechniques:next});}},'使用全部'),
         ...J.order(group).filter(id=>J.registry(group)[id]&&!J.registry(group)[id].special).map(id=>h('label',{key:id},h('input',{type:'checkbox',checked:!Array.isArray(tuning.enabledTechniques?.[group])||tuning.enabledTechniques[group].includes(id),onChange:e=>{const all=J.order(group).filter(key=>J.registry(group)[key]&&!J.registry(group)[key].special);const selected=new Set(Array.isArray(tuning.enabledTechniques?.[group])?tuning.enabledTechniques[group]:all);if(e.target.checked)selected.add(id);else selected.delete(id);change({enabledTechniques:{...(tuning.enabledTechniques||{}),[group]:[...selected]}});}}),J.registry(group)[id].name||id))
-      ))),
-      h(LazyDetails,null,h('summary',null,'参数随机锁'),...Object.keys(J.defaultProject().fx).map(key=>h('label',{key},h('input',{type:'checkbox',checked:!!tuning.locks?.params?.[key],onChange:e=>change({locks:{...tuning.locks,params:{...tuning.locks?.params,[key]:e.target.checked}}})}),key))),
-      h(LazyDetails,null,h('summary',null,'逐行与逐镜头编排'),...lines.map(lineEditor)),
-      h(LazyDetails,null,h('summary',null,'时间轴与效果预览'),h(EditorTools,{tuning,onChange:change,lines,playback,plan})),
+      ]},h('summary',null,`${GROUP_LABELS[group]} 候选池${Array.isArray(tuning.enabledTechniques?.[group])?` · ${tuning.enabledTechniques[group].length}`:' · 全部'}`)))},h('summary',null,'候选效果池与随机锁')),
+      h(LazyDetails,{renderContent:()=>Object.keys(J.defaultProject().fx).map(key=>h('label',{key},h('input',{type:'checkbox',checked:!!tuning.locks?.params?.[key],onChange:e=>change({locks:{...tuning.locks,params:{...tuning.locks?.params,[key]:e.target.checked}}})}),key))},h('summary',null,'参数随机锁')),
+      h(LazyDetails,{onToggle:e=>{if(e.currentTarget.open)setEditorOpened(true);},renderContent:()=>lines.map(lineEditor)},h('summary',null,'逐行与逐镜头编排')),
+      h(LazyDetails,{onToggle:e=>{if(e.currentTarget.open)setEditorOpened(true);},renderContent:()=>h(EditorTools,{tuning,onChange:change,lines,playback,plan})},h('summary',null,'时间轴与效果预览')),
       h(FoliaJizuraMedia.Settings,{tuning,onChange,lines,playback,audioSignals}),
       h('button',{type:'button',onClick:()=>change({seed:(Number(tuning.seed)||0)+1,nativeSeed:undefined})},'重新编排'),
       h('button',{type:'button',onClick:()=>onChange(randomizeTuning(tuning,lines,playback))},'随机主题配置')

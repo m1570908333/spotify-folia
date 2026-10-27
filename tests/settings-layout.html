@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotify Folia Settings Layout Regression</title>
+<link rel="stylesheet" href="../prototype/folia-stage/style.css">
+<style>
+  :root { --folia-accent: #f4f4f5; --spice-subtext: #bdc2be; --spice-border: #505550; }
+  body { margin: 16px; background: #090b0a; color: #f8faf7; font: 13px Arial, sans-serif; }
+  main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; }
+  .sample { max-width: 100%; }
+  .sample > h2 { font-size: 14px; font-weight: 500; }
+  .sample .folia-settings { position: static; width: 100%; max-height: none; padding: 16px; }
+  output { display: block; margin-block: 12px; }
+</style>
+<h1 style="font-size:20px">Settings Layout Regression</h1>
+<output id="result">Checking layout...</output>
+<main></main>
+<template id="settings">
+  <aside class="folia-settings">
+    <div class="folia-settings__section">
+      <label>Subtitle content</label>
+      <div class="folia-segmented">
+        <button>Translation</button><button>Romanization</button>
+        <button class="is-active">Translation + Romanization</button><button>None</button>
+      </div>
+    </div>
+    <div class="folia-settings__section folia-theme-settings">
+      <label>Theme &amp; typography</label>
+      <div class="folia-theme-settings__colors">
+        <label class="folia-color-control"><input type="color" value="#f4f4f5"><span>Primary text</span></label>
+        <label class="folia-color-control"><input type="color" value="#aaaaaa"><span>Secondary text</span></label>
+        <label class="folia-color-control"><input type="color" value="#111111"><span>Stage background</span></label>
+        <label class="folia-color-control"><input type="color" value="#eeeeee"><span>Custom accent color</span></label>
+        <button class="folia-button folia-theme-settings__match">Match album art</button>
+      </div>
+      <div class="folia-settings__file-row">
+        <label class="folia-inline-control folia-inline-control--wide">Font family<input class="folia-text-input" value="Spotify Mix"></label>
+        <button class="folia-button">Replace font (VeryLongCustomFontName.woff2)</button>
+      </div>
+    </div>
+    <div class="folia-settings__section">
+      <div class="folia-tempera-image-pool">
+        <label>Image pool 1/16</label>
+        <div class="folia-settings__file-row">
+          <button class="folia-button folia-button--primary">Add images</button><button class="folia-button">Export image pool</button>
+          <button class="folia-button">Import image pool</button><button class="folia-button">Clear</button>
+        </div>
+        <div class="folia-settings__file-row">
+          <label class="folia-inline-control">Import mode<select><option>Append to current pool</option><option>Replace current pool</option></select></label>
+          <label class="folia-inline-control">Image layer<select><option>Behind lyrics</option><option>In front of lyrics</option></select></label>
+          <label class="folia-inline-control folia-inline-control--wide">Appearance frequency 60%<input type="range" value="60"></label>
+        </div>
+        <div class="folia-tempera-image-row">
+          <span class="folia-tempera-image-name" title="An unusually long imported image name.png">An unusually long imported image name.png</span>
+          <select aria-label="Horizontal alignment"><option>center</option><option>left</option></select>
+          <select aria-label="Vertical alignment"><option>bottom</option><option>top</option></select>
+          <input type="range" aria-label="Scale"><input type="range" aria-label="Opacity">
+          <button class="folia-icon-button" title="Remove image">&times;</button>
+        </div>
+      </div>
+    </div>
+    <div class="folia-settings__section folia-settings__jizura">
+      <label>JIZURA</label>
+      <details open><summary>Advanced animation settings</summary>
+        <label>Transition effect<select><option>Continuous cinematic motion</option><option>Automatic</option></select></label>
+        <label><input type="checkbox" checked>Automatically match animation to lyric sentiment</label>
+        <button>Restore default transition configuration</button>
+      </details>
+    </div>
+  </aside>
+</template>
+<script>
+  for (const width of [260, 320, 360]) {
+    const sample = document.createElement('section');
+    sample.className = 'sample';
+    sample.style.width = width + 'px';
+    sample.innerHTML = '<h2>' + width + 'px panel</h2>';
+    sample.append(document.querySelector('template').content.cloneNode(true));
+    document.querySelector('main').append(sample);
+  }
+  window.addEventListener('load', () => {
+    const errors = [];
+    for (const panel of document.querySelectorAll('.folia-settings')) {
+      const bounds = panel.getBoundingClientRect();
+      if (panel.scrollWidth > panel.clientWidth + 1) errors.push('Panel horizontal overflow: ' + bounds.width);
+      for (const control of panel.querySelectorAll('button, select, input, label')) {
+        const rect = control.getBoundingClientRect();
+        if (rect.right > bounds.right + 1 || rect.left < bounds.left - 1) errors.push('Control outside panel: ' + control.textContent);
+        if (control.tagName === 'BUTTON' && (control.scrollWidth > control.clientWidth + 1 || control.scrollHeight > control.clientHeight + 1)) errors.push('Clipped button: ' + control.textContent);
+      }
+      const match = panel.querySelector('.folia-theme-settings__match');
+      if (match.getBoundingClientRect().height > 40) errors.push('Album art button too tall');
+    }
+    document.querySelector('#result').textContent = errors.length ? errors.join('\n') : 'PASS: 260 / 320 / 360px panels; no horizontal overflow, clipped buttons or tall album-art actions.';
+    document.querySelector('#result').dataset.passed = String(!errors.length);
+  });
+</script>
+</html>

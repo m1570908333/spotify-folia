@@ -109,6 +109,26 @@
 .folia-release-dialog > a { display: inline-block; margin: 0 14px 0 0; color: #9be7b1; }
 .folia-release-dialog > button { margin-top: 14px; }
 .folia-sponsor-button { color: #ff6b88 !important; text-decoration: none; }
+.folia-sponsor-dialog { text-align: center; }
+.folia-sponsor-dialog > header { text-align: left; }
+.folia-sponsor-card {
+  display: block;
+  width: min(440px, 100%);
+  height: auto;
+  margin: 18px auto;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 12%);
+}
+.folia-sponsor-link-label {
+  margin: 14px 0 5px;
+  color: #b3b3b3;
+  font-size: 13px;
+}
+.folia-sponsor-link {
+  color: #a8e6bd;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
 
 .folia-background-handover,
 .folia-background-handover__layer {
@@ -868,7 +888,8 @@
   z-index: 8;
   top: calc(var(--folia-host-topbar) + 68px);
   right: 20px;
-  width: min(320px, calc(100% - 40px));
+  box-sizing: border-box;
+  width: min(360px, calc(100% - 40px));
   max-height: calc(100% - 24px);
   padding: 18px;
   overflow-y: auto;
@@ -880,6 +901,60 @@
   backdrop-filter: blur(18px);
   overscroll-behavior: contain;
   scrollbar-width: thin;
+}
+
+/* Settings live in a narrow host panel, independently of viewport width. */
+.folia-settings *,
+.folia-settings *::before,
+.folia-settings *::after {
+  box-sizing: border-box;
+}
+
+.folia-settings :is(div, label, details, button, select, input, textarea) {
+  min-width: 0;
+}
+
+.folia-settings :is(label, small, summary, button) {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.folia-settings button:not(.folia-icon-button):not(.folia-asset-pool__item button) {
+  height: auto;
+  min-height: 34px;
+  padding: 7px 9px;
+  white-space: normal;
+}
+
+.folia-settings :is(select, textarea) {
+  max-width: 100%;
+  color: inherit;
+  background: #252826;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.folia-settings select {
+  min-height: 34px;
+  padding: 5px 6px;
+}
+
+.folia-settings label:has(> input[type="checkbox"]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.folia-settings input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.folia-settings button:disabled { opacity: .45; cursor: default; }
+.folia-settings :is(button, select, input, textarea):focus-visible {
+  outline: 2px solid var(--folia-accent);
+  outline-offset: 2px;
 }
 
 .folia-settings__english input[type="checkbox"] { accent-color: var(--folia-accent); }
@@ -1075,11 +1150,12 @@
 .folia-settings__jizura details { min-width: 0; border-top: 1px solid rgba(255,255,255,.1); padding-top: 8px; }
 .folia-settings__jizura details[open] { display: grid; gap: 8px; }
 .folia-settings__jizura summary { cursor: pointer; overflow-wrap: anywhere; line-height: 1.5; }
-.folia-settings__jizura details label { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-width: 0; font-size: 12px; }
+.folia-settings__jizura details label { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; min-width: 0; font-size: 12px; }
 .folia-settings__jizura select,
 .folia-settings__jizura input:not([type="checkbox"]),
 .folia-settings__jizura textarea { min-width: 0; max-width: 100%; }
-.folia-settings__jizura label select { max-width: 65%; }
+.folia-settings__jizura label:has(> select) { display: grid; grid-template-columns: minmax(0, 1fr); }
+.folia-settings__jizura label select { width: 100%; max-width: 100%; }
 .folia-settings__jizura label input[type="text"],
 .folia-settings__jizura label input:not([type]) { width: 60%; }
 .folia-settings__jizura label input[type="number"] { width: 90px; }
@@ -1119,6 +1195,7 @@
 
 .folia-settings__section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 9px;
 }
 
@@ -1147,6 +1224,7 @@
 
 .folia-background-asset__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -1183,11 +1261,18 @@
 
 .folia-tempera-image-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) 70px 70px minmax(70px, .8fr) minmax(70px, .8fr) 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 24px;
   align-items: center;
   gap: 6px;
   min-width: 0;
+  padding-block: 8px;
+  border-top: 1px solid rgba(255,255,255,.08);
 }
+
+.folia-tempera-image-row > .folia-tempera-image-name { grid-column: 1 / 3; grid-row: 1; }
+.folia-tempera-image-row > select { grid-row: 2; width: 100%; }
+.folia-tempera-image-row > input { grid-row: 3; }
+.folia-tempera-image-row > button { grid-column: 3; grid-row: 1 / 4; align-self: start; }
 
 .folia-tempera-image-name {
   overflow: hidden;
@@ -1213,23 +1298,17 @@
   cursor: pointer;
 }
 
-@media (max-width: 900px) {
-  .folia-tempera-image-row {
-    grid-template-columns: minmax(90px, 1fr) 64px 64px 1fr 1fr 24px;
-  }
-}
-
 .folia-segmented,
 .folia-offset,
 .folia-provider-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
 }
 
 .folia-background-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 90px), 1fr));
   gap: 4px;
 }
 
@@ -1369,7 +1448,11 @@
 }
 
 .folia-provider-grid {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.folia-settings .folia-segmented {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr));
 }
 
 .folia-segmented button,
@@ -1408,7 +1491,7 @@
 
 .folia-settings__file-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 125px), 1fr));
   gap: 6px;
 }
 
@@ -1465,15 +1548,18 @@
 }
 
 .folia-inline-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 5px;
+  grid-column: 1 / -1;
   min-height: 32px;
   color: var(--spice-subtext);
 }
 
 .folia-inline-control select {
-  min-width: 112px;
+  min-width: 0;
+  width: 100%;
 }
 
 .folia-inline-control--wide {
@@ -1481,25 +1567,27 @@
 }
 
 .folia-inline-control--wide input[type="range"] {
-  min-width: 120px;
-  flex: 1;
+  min-width: 0;
 }
 
 .folia-theme-settings__colors {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 8px;
 }
 
+.folia-theme-settings__match { grid-column: 1 / -1; }
+
 .folia-color-control {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: var(--spice-subtext);
   font-size: 10px;
 }
 
 .folia-color-control input[type="color"] {
+  flex: 0 0 30px;
   width: 30px;
   height: 24px;
   padding: 0;

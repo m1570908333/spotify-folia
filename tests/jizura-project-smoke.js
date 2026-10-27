@@ -85,7 +85,8 @@ for(const corrupt of ['null','[]','42','"broken"']){
 }
 let changed;
 const ui=api.Settings({tuning,onChange:value=>{changed=value;},lines,playback});
-const elements=[];const walk=node=>{if(Array.isArray(node))return node.forEach(walk);if(node&&typeof node==='object'){elements.push(node);node.children?.forEach(walk);}};walk(ui);
+// Exercise advanced controls explicitly now that closed sections are deferred.
+const elements=[];const walk=node=>{if(Array.isArray(node))return node.forEach(walk);if(node&&typeof node==='object'){elements.push(node);node.children?.forEach(walk);if(node.props?.renderContent)walk(node.props.renderContent());}};walk(ui);
 assert(elements.some(el=>el.type===media.Settings),'media workflow is present');
 const motionSlider=elements.find(el=>el.type==='label'&&el.children?.[0]?.startsWith?.('运动幅度'))?.children?.[1];
 assert(motionSlider);motionSlider.props.onChange({target:{value:'1.3'}});assert.equal(changed.motionIntensity,1.3);assert.equal(changed.nativeFx.motion,undefined);

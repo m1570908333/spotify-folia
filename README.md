@@ -37,7 +37,8 @@ available. No GitHub token or Spotify password is required by this project.
 - JIZURA project import/export, per-line editing, undo/redo, effect preview,
   local audio analysis, and offline export formats where the browser supports
   them.
-- Version information for Spotify Folia and the Folia/JIZURA source baselines.
+- Spotify Folia version information and release update notifications.
+- Built-in PayPal sponsor card with an optional support link.
 
 Lyrics and imported media remain on the user's device unless the selected lyric
 provider is contacted to search for lyrics. Do not import media you do not have
