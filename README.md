@@ -11,7 +11,7 @@ and the embedded JIZURA engine inside Spotify desktop.
 
 ![Spotify Folia inside Spotify desktop](docs/media/overview.png)
 
-**[Watch the demo on YouTube](https://www.youtube.com/watch?v=r8Toc7BG2yQ)**
+**[Watch the demo](#video-demos)**
 &nbsp;|&nbsp; **[Download the latest release](https://github.com/m1570908333/spotify-folia/releases/latest)**
 
 Screenshots below show the app running in Spotify. Spotify's surrounding
@@ -51,13 +51,10 @@ interface follows the user's language; Spotify Folia's controls are in English.
 
 ## Video Demos
 
-Still images show the layouts; watch the demo to see the stage animations.
+Watch the complete demo below without leaving GitHub. This 720p preview runs
+for approximately two minutes and five seconds.
 
-[![Watch the Spotify Folia demo on YouTube](docs/media/jizura.png)](https://www.youtube.com/watch?v=r8Toc7BG2yQ)
-
-**[Play the demo on YouTube](https://www.youtube.com/watch?v=r8Toc7BG2yQ)**
-
-The preview above is a screenshot from the app, not an embedded video player.
+https://github.com/user-attachments/assets/a12d7b34-3b33-405d-839d-d0b2ae0c6e59
 
 ## Requirements
 

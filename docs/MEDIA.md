@@ -11,16 +11,19 @@
 | `interface-toolbar.png` | 工具栏与舞台界面，折叠展示 |
 | `settings.png` | 设置、字体及背景控制，折叠展示 |
 | `segmentation.png` | 歌词分词编辑，折叠展示 |
-| `jizura.png` | 视频入口封面、JIZURA 舞台画廊 |
+| `jizura.png` | JIZURA 舞台画廊 |
 | `flow.png`、`poster.png`、`cappella.png` | 舞台双列画廊 |
 | `claddagh.png`、`monet.png`、`pendolo.png` | 舞台双列画廊 |
 | `diorama.png`、`sonnet.png`、`tempera.png` | 舞台双列画廊 |
 | `lumiere.png` | 舞台画廊中的折叠大图 |
 
-公开视频：https://www.youtube.com/watch?v=r8Toc7BG2yQ
+README 使用 GitHub 视频附件，在页面内直接播放，不再跳转 YouTube。
+附件地址：https://github.com/user-attachments/assets/a12d7b34-3b33-405d-839d-d0b2ae0c6e59
 
-README 点击视频封面后打开 YouTube，不把本地视频上传到仓库。
-`Demo.mp4` 约 406 MB，保留在本机，并由 `.gitignore` 排除。
+视频保存在仓库第 1 条 Issue 的附件中，该 Issue 仅用于文档素材，已关闭，
+请勿删除附件。展示版为 H.264/AAC、720p，约 8.1 MB，完整时长约 2 分 5 秒。
+原始 `Demo.mp4` 为 8K、约 406 MB，保留在本机，并由 `.gitignore` 排除；
+原件和压缩版均不提交进 Git 历史。
 本次只有 English Stage 没有专用画廊截图，不影响安装和功能；README
 保留模式介绍，不显示缺失图片或占位提示。
 
