@@ -2,3 +2,13 @@ dist/
 node_modules/
 *.log
 backups/
+
+# Local exports and development screenshots, not release sources.
+/github/
+/*-runtime.png
+
+# Keep large recordings locally; publish demo links in the README.
+/docs/media/*.mp4
+/docs/media/*.mov
+/docs/media/*.webm
+/docs/media/*.mkv
